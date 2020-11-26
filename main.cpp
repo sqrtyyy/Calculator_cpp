@@ -16,6 +16,6 @@ int main() {
     } else {
         std::cout << Calculator::GetErrMsg(calculator.getError()) << std::endl;
     }
-    system("pause");
+    system("pause ");
     return 0;
 }

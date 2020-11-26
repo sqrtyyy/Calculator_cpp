@@ -5,49 +5,12 @@
 #include <iostream>
 #include "Calculator.h"
 
-using std::string;
-
-
-double Calculator::calculate(std::string expression){
-    if(error == DLL_IMPORT_ERROR) return 0;
+double Calculator::calculate(string expression){
+    if(error == DLL_IMPORT_ERROR) return NAN;
     error = Errors::OK;
-    double result = 0;
     auto tokensValueType = ExpressionParser::parseExpression(expression, possibleOperations);
-    while (!error && !tokensValueType.empty()){
-        auto type = tokensValueType.front().first;
-        auto value = tokensValueType.front().second;
-        switch (type) {
-            case ExpressionParser::LEFT_BRACKET:
-                operations.push(nullptr);
-                break;
-            case ExpressionParser::RIGHT_BRACKET:
-                goToPrevBracket();
-                break;
-            case ExpressionParser::NUMBER:
-                numbers.push(std::any_cast<double>(value));
-                break;
-            case ExpressionParser::OPERATION:
-                pushOperationInStack(std::any_cast<Operation*>(value));
-                break;
-            case ExpressionParser::UNDEFINED:
-                error = Errors::WRONG_FUN;
-        }
-        tokensValueType.pop();
-    }
-    if(error) {
-        clearStacks();
-        return result;
-    }
-    calcReminder();
-    if(error){
-        clearStacks();
-        return result;
-    }
-    result = numbers.top();
-    numbers.pop();
-    if(!numbers.empty()){
-        error = Errors::NOT_ENOUGH_FUNCTIONS;
-    }
+    CalculateExpression(tokensValueType);
+    double result = getResult();
     clearStacks();
     return result;
 }
@@ -85,13 +48,7 @@ void Calculator::pushOperationInStack(Operation* operation) {
     if(!error) operations.push(operation);
 }
 
-void Calculator::calcReminder() {
-    while(!error && !operations.empty()){
-        CalculateLastOperation();
-    }
-}
-
-std::vector<double> Calculator::generateArsArray(unsigned int argNum) {
+std::vector<double> Calculator::generateArgsArray(unsigned int argNum) {
     std::vector<double> args(argNum);
     int i;
     for(i = 0; i < argNum && !numbers.empty(); i++){
@@ -107,7 +64,7 @@ std::vector<double> Calculator::generateArsArray(unsigned int argNum) {
 void Calculator::CalculateLastOperation() {
     Operation* curOperation = operations.top();
     double  answer;
-    auto args = generateArsArray(curOperation->getNumOfArgs());
+    auto args = generateArgsArray(curOperation->getNumOfArgs());
     if(error) return;
     auto errOp = curOperation->calc(args, answer);
     if(errOp){
@@ -117,10 +74,6 @@ void Calculator::CalculateLastOperation() {
         numbers.push(answer);
         operations.pop();
     }
-}
-
-Calculator::Errors Calculator::getError() const {
-    return error;
 }
 
 void Calculator::clearStacks() {
@@ -155,7 +108,11 @@ void Calculator::goToPrevBracket() {
     }
 }
 
-std::string Calculator::GetErrMsg(Errors error) {
+Calculator::Errors Calculator::getError() const {
+    return error;
+}
+
+string Calculator::GetErrMsg(Errors error) {
     string msg;
     switch (error) {
         case WRONG_BRACKETS:
@@ -182,3 +139,44 @@ std::string Calculator::GetErrMsg(Errors error) {
     return msg;
 }
 
+void Calculator::CalculateExpression(queue<pair<ExpressionParser::TypeOfToken, std::any>>& tokensValueType) {
+    while (!error && !tokensValueType.empty()){
+        auto type = tokensValueType.front().first;
+        auto value = tokensValueType.front().second;
+        switch (type) {
+            case ExpressionParser::LEFT_BRACKET:
+                operations.push(nullptr);
+                break;
+            case ExpressionParser::RIGHT_BRACKET:
+                goToPrevBracket();
+                break;
+            case ExpressionParser::NUMBER:
+                numbers.push(std::any_cast<double>(value));
+                break;
+            case ExpressionParser::OPERATION:
+                pushOperationInStack(std::any_cast<Operation*>(value));
+                break;
+            case ExpressionParser::UNDEFINED:
+                error = Errors::WRONG_FUN;
+        }
+        tokensValueType.pop();
+    }
+    while(!error && !operations.empty()){
+        CalculateLastOperation();
+    }
+}
+
+double Calculator::getResult() {
+    if(error) return NAN;
+    if(numbers.empty()){
+        error = Errors::NOT_ENOUGH_NUMBERS;
+        return NAN;
+    }
+    double result = numbers.top();
+    numbers.pop();
+    if(!numbers.empty()){
+        error = Errors::NOT_ENOUGH_NUMBERS;
+        result = NAN;
+    }
+    return result;
+}

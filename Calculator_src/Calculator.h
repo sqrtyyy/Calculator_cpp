@@ -28,7 +28,7 @@ public:
         ERROR_IN_FUN,
     };
 
-    double calculate(std::string expression);
+    double calculate(string expression);
 
     Errors getError() const;
 
@@ -37,7 +37,7 @@ public:
 
     ~Calculator();
 
-    static std::string GetErrMsg(Errors error);
+    static string GetErrMsg(Errors error);
 
 private:
     stack<Operation*> operations;
@@ -51,10 +51,11 @@ private:
     void clearStacks();
     void LoadDlls();
     void pushOperationInStack(Operation* operation);
-    void calcReminder();
-    std::vector<double> generateArsArray(unsigned int argNum);
+    std::vector<double> generateArgsArray(unsigned int argNum);
     void CalculateLastOperation();
     void goToPrevBracket();
+    void CalculateExpression(queue<pair<ExpressionParser::TypeOfToken, std::any>>& tokensValueType);
+    double getResult();
 
 };
 
