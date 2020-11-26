@@ -6,7 +6,7 @@
 
 using std::cin;
 
-int main(int, char** argv) {
+int main() {
     std::string expression;
     Calculator calculator;
     std::getline(cin, expression);

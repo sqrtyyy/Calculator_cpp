@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB CALC_SRC Calculator_src/*.cpp Calculator_src/*.h)
 
-add_executable(Calculator ${CALC_SRC})
+add_executable(Calculator main.cpp ${CALC_SRC})
 
 add_library(Pow SHARED dll_src/Pow.cpp)
 add_library(SIN SHARED  dll_src/SIN.cpp)

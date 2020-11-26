@@ -3,54 +3,36 @@
 //
 
 #include <iostream>
-#include <filesystem>
 #include "Calculator.h"
 
 using std::string;
-namespace fs = std::filesystem;
 
 
 double Calculator::calculate(std::string expression){
     if(error == DLL_IMPORT_ERROR) return 0;
     error = Errors::OK;
     double result = 0;
-    while (!error && !expression.empty()){
-        int pos = expression.find(delimiter);
-        if(pos == string::npos){
-            pos = expression.length();
-        }
-        string curToken = expression.substr(0, pos);
-
-        if(pos != expression.length()){
-            expression.erase(0, delimiter.length());
-        }
-        expression.erase(0, pos);
-        if(curToken.empty()) continue;
-        if(curToken == "(") {
-            operations.push(nullptr);
-            continue;
-        }
-        if(curToken == ")") {
-            goToPrevBracket();
-            continue;
-        }
-
-        try {
-            numbers.push(std::stod(curToken));
-        } catch (std::exception& exception) {
-            Operation* operation = nullptr;
-            for(auto curOperation : possibleOperations){
-                if(curOperation->isThisOperation(curToken)){
-                    operation = curOperation;
-                    break;
-                }
-            }
-            if(operation != nullptr){
-                pushOperationInStack(operation);
-            } else {
+    auto tokensValueType = ExpressionParser::parseExpression(expression, possibleOperations);
+    while (!error && !tokensValueType.empty()){
+        auto type = tokensValueType.front().first;
+        auto value = tokensValueType.front().second;
+        switch (type) {
+            case ExpressionParser::LEFT_BRACKET:
+                operations.push(nullptr);
+                break;
+            case ExpressionParser::RIGHT_BRACKET:
+                goToPrevBracket();
+                break;
+            case ExpressionParser::NUMBER:
+                numbers.push(std::any_cast<double>(value));
+                break;
+            case ExpressionParser::OPERATION:
+                pushOperationInStack(std::any_cast<Operation*>(value));
+                break;
+            case ExpressionParser::UNDEFINED:
                 error = Errors::WRONG_FUN;
-            }
         }
+        tokensValueType.pop();
     }
     if(error) {
         clearStacks();
@@ -70,7 +52,7 @@ double Calculator::calculate(std::string expression){
     return result;
 }
 
-Calculator::Calculator() {
+Calculator::Calculator(){
     LoadDlls();
 }
 
@@ -85,6 +67,7 @@ void Calculator::LoadDlls() {
         HMODULE hDLL = LoadLibrary(pathToDll);
         GetModuleFileName(hDLL, pathToDll, MAX_PATH);
         if(hDLL != nullptr){
+            Dlls.push_back(hDLL);
             FARPROC fun =  GetProcAddress(hDLL,"GetOperation" );
             possibleOperations.push_back(reinterpret_cast<Operation*>(fun()));
         } else {
@@ -152,6 +135,9 @@ void Calculator::clearStacks() {
 Calculator::~Calculator() {
     for (Operation* op : possibleOperations){
         delete op;
+    }
+    for(auto hDll : Dlls){
+        FreeLibrary(hDll);
     }
 
 }

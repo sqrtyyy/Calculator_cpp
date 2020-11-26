@@ -12,6 +12,7 @@
 
 #include "Addition.h"
 #include "Multiplication.h"
+#include "ExpressionParser.h"
 
 using std::stack;
 
@@ -41,9 +42,10 @@ public:
 private:
     stack<Operation*> operations;
     stack<double> numbers;
-    std::string delimiter = " ";
     std::list<Operation*> possibleOperations = {new Addition(), new Multiplication()};
+
     char path[MAX_PATH] = "Plugins\\*.*";
+    std::list<HMODULE> Dlls;
     Errors error = OK;
 
     void clearStacks();
